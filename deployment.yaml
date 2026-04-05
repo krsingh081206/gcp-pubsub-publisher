@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-publisher-deployment
+  namespace: default # Or your target namespace
+  labels:
+    app: order-publisher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-publisher
+  template:
+    metadata:
+      labels:
+        app: order-publisher
+    spec:
+      # This service account is configured for Workload Identity
+      serviceAccountName: order-publisher-sa
+      terminationGracePeriodSeconds: 60 # Allow time for graceful shutdown and message flushing
+      containers:
+        - name: order-publisher
+          # The image will be updated by the Cloud Build pipeline
+          image: gcr.io/your-gcp-project-id/order-publisher:latest # CHANGE_ME: Placeholder image
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: GCP_PROJECT_ID
+              # This value should be set to your GCP Project ID.
+              # It's often managed via CI/CD substitution or a ConfigMap.
+              value: "your-gcp-project-id" # CHANGE_ME
+            - name: PUBSUB_TOPIC_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: order-publisher-config
+                  key: PUBSUB_TOPIC_ID
+            - name: PUBLISH_INTERVAL_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: order-publisher-config
+                  key: PUBLISH_INTERVAL_MS
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"

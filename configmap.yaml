@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-publisher-config
+  namespace: default # Or your target namespace
+data:
+  # The ID of your Pub/Sub topic
+  PUBSUB_TOPIC_ID: "order-events" # CHANGE_ME: Update with your topic ID
+  # The interval in milliseconds to publish a new message
+  PUBLISH_INTERVAL_MS: "2000"

@@ -1,0 +1,10 @@
+.git
+.gitignore
+node_modules
+Dockerfile
+cloudbuild.yaml
+k8s
+GEMINI.md
+LICENSE.md
+README.md
+.env

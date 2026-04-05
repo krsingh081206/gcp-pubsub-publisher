@@ -1,0 +1,17 @@
+{
+  "name": "gcp-pubsub-publisher",
+  "version": "1.0.0",
+  "description": "Order Creation Event Publisher for GCP Pub/Sub",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Gemini Code Assist",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@faker-js/faker": "^8.4.1",
+    "@google-cloud/pubsub": "^4.3.3",
+    "dotenv": "^17.4.0",
+    "winston": "^3.13.0"
+  }
+}
