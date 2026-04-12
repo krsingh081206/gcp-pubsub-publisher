@@ -9,4 +9,4 @@ data:
   # The interval in milliseconds to publish a new message
   PUBLISH_INTERVAL_MS: "2000"
   # Your Google Cloud Project ID
-  GCP_PROJECT_ID="gcp-poc-app-dev"
+  GCP_PROJECT_ID: "gcp-poc-app-dev"
