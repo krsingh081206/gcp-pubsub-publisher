@@ -9,7 +9,7 @@ yarn-error.log*
 
 # Local env files
 .env
-.GEMINI.md
+GEMINI.md
 
 # Build output
 /dist

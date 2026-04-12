@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-publisher-deployment
+  namespace: demo # Or your target namespace
+  labels:
+    app: order-publisher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-publisher
+  template:
+    metadata:
+      labels:
+        app: order-publisher
+    spec:
+      terminationGracePeriodSeconds: 60 # Allow time for graceful shutdown and message flushing
+      containers:
+        - name: order-publisher
+          # The image will be updated by the Cloud Build pipeline
+          image: pubsub-order-publisher
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          envFrom:
+            - configMapRef:
+                name: order-publisher-config

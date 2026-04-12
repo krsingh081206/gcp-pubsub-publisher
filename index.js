@@ -46,7 +46,8 @@ const faker = new Faker({ locale: [en] });
 
 function generateDummyOrder() {
   const order = {
-    orderId: faker.number.int({ min: 10, max: 9007199254740991 }), 
+    //orderId: faker.number.int({ min: 10, max: 9007199254740991 }), 
+    orderId: faker.string.uuid(),
     timestamp: new Date().toISOString(),
     customer: {
       name: faker.person.fullName(),

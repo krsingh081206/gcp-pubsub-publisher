@@ -1,68 +1,77 @@
-# This Cloud Build pipeline builds the Docker image for the publisher,
-# pushes it to Google Artifact Registry, and deploys it to a GKE cluster.
-#
-# To run this pipeline, you need a Cloud Build trigger.
-# The following substitution variables are expected to be provided by the trigger:
-# _GKE_CLUSTER: The name of your GKE cluster.
-# _GKE_LOCATION: The location of your GKE cluster (e.g., us-central1).
-# _GAR_LOCATION: The location of your Artifact Registry (e.g., us-central1).
-# _REPOSITORY: The name of your Artifact Registry repository.
-#
-# The Cloud Build service account needs the following roles:
-# - Artifact Registry Writer (roles/artifactregistry.writer)
-# - Kubernetes Engine Developer (roles/container.developer)
-
+---
+options:
+  logging: CLOUD_LOGGING_ONLY
 steps:
-  # 1. Build the container image
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Image'
+  - name: gcr.io/cloud-builders/docker
+    id: Pull
+    entrypoint: bash
     args:
-      - 'build'
-      - '-t'
-      - '${_GAR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/order-publisher:$SHORT_SHA'
-      - '.'
-
-  # 2. Push the container image to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Push Image'
-    args:
-      - 'push'
-      - '${_GAR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/order-publisher:$SHORT_SHA'
-
-  # 3. Update Kubernetes manifests with the new image tag and project ID
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'Update Manifests'
-    entrypoint: 'bash'
-    args:
-      - '-c'
+      - -c
       - |
-        echo "Updating deployment.yaml with image and project ID..."
-        sed -i "s|gcr.io/your-gcp-project-id/order-publisher:latest|${_GAR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/order-publisher:$SHORT_SHA|g" k8s/deployment.yaml
-        sed -i "s|your-gcp-project-id|$PROJECT_ID|g" k8s/deployment.yaml
-        echo "Manifests updated."
-
-  # 4. Get GKE credentials
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'Get GKE Credentials'
-    entrypoint: 'gcloud'
+        docker pull us-east4-docker.pkg.dev/$PROJECT_ID/demo-service/$_IMAGE:latest || exit 0
+  - name: gcr.io/cloud-builders/docker
+    id: Build
     args:
-      - 'container'
-      - 'clusters'
-      - 'get-credentials'
-      - '${_GKE_CLUSTER}'
-      - '--location'
-      - '${_GKE_LOCATION}'
-
-  # 5. Deploy to GKE
-  - name: 'gcr.io/cloud-builders/kubectl'
-    id: 'Deploy to GKE'
+      - build
+      - -t
+      - us-east4-docker.pkg.dev/$PROJECT_ID/demo-service/$_IMAGE:$SHORT_SHA
+      - --cache-from
+      - us-east4-docker.pkg.dev/$PROJECT_ID/demo-service/$_IMAGE:latest
+      - .
+  - name: gcr.io/cloud-builders/docker
+    id: Push
     args:
-      - 'apply'
-      - '-f'
-      - 'k8s/'
+      - push
+      - us-east4-docker.pkg.dev/$PROJECT_ID/demo-service/$_IMAGE:$SHORT_SHA
+  - name: gcr.io/cloud-builders/gcloud
+    id: Set image name
+    entrypoint: /bin/sh
+    args:
+      - -c
+      - >
+        sed -i "s/image: pubsub-order-publisher/image: us-east4-docker.pkg.dev\/$PROJECT_ID\/demo-service\/$_IMAGE:$SHORT_SHA/g"
+        k8s/$_ENVIRONMENT/deployment.yaml
+  
+  - name: gcr.io/cloud-builders/gcloud
+    id: Authenticate kubernetes
+    args:
+      - container
+      - clusters
+      - get-credentials
+      - $_CLUSTER
+      - --region
+      - $_REGION
+      - --project
+      - $_GKE_PROJECT
+
+  - name: gcr.io/cloud-builders/kubectl
+    id: CreateNamespace
+    args:
+      - apply
+      - -f
+      - k8s/common/
     env:
-      - 'CLOUDSDK_COMPUTE_ZONE=${_GKE_LOCATION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${_GKE_CLUSTER}'
+      - CLOUDSDK_COMPUTE_REGION=${_REGION}
+      - CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER}
+      - CLOUDSDK_CORE_PROJECT=${_GKE_PROJECT}
 
-images:
-  - '${_GAR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/order-publisher:$SHORT_SHA'
+  - name: gcr.io/cloud-builders/kubectl
+    id: Deploy Service to GKE
+    waitFor: ['CreateNamespace']
+    args:
+      - apply
+      - -f
+      - k8s/$_ENVIRONMENT/
+    env:
+      - CLOUDSDK_COMPUTE_REGION=${_REGION}
+      - CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER}
+      - CLOUDSDK_CORE_PROJECT=${_GKE_PROJECT}
+  
+  - name: gcr.io/cloud-builders/gcloud
+    id: Tag
+    args:
+      - container
+      - images
+      - add-tag
+      - us-east4-docker.pkg.dev/$PROJECT_ID/demo-service/$_IMAGE:$SHORT_SHA
+      - us-east4-docker.pkg.dev/$PROJECT_ID/demo-service/$_IMAGE:latest
