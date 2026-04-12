@@ -1,5 +1,5 @@
 // Load environment variables from .env file for local development
-require('dotenv').config();
+//require('dotenv').config();
 
 const { PubSub } = require('@google-cloud/pubsub');
 const { Faker, en } = require('@faker-js/faker');
