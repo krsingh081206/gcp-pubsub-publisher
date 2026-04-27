@@ -1,5 +1,5 @@
 // Load environment variables from .env file for local development
-//require('dotenv').config();
+require('dotenv').config();
 
 const { PubSub } = require('@google-cloud/pubsub');
 const { Faker, en } = require('@faker-js/faker');
@@ -46,8 +46,8 @@ const faker = new Faker({ locale: [en] });
 
 function generateDummyOrder() {
   const order = {
-    //orderId: faker.number.int({ min: 10, max: 9007199254740991 }), 
-    orderId: faker.string.uuid(),
+    orderId: faker.number.int({ min: 10, max: 9007199254740991 }), 
+    //orderId: faker.string.uuid(),
     timestamp: new Date().toISOString(),
     customer: {
       name: faker.person.fullName(),
