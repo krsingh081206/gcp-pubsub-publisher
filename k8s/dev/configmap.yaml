@@ -7,6 +7,6 @@ data:
   # The ID of your Pub/Sub topic
   PUBSUB_TOPIC_ID: "order-events" # CHANGE_ME: Update with your topic ID
   # The interval in milliseconds to publish a new message
-  PUBLISH_INTERVAL_MS: "10"
+  PUBLISH_INTERVAL_MS: "100"
   # Your Google Cloud Project ID
   GCP_PROJECT_ID: "gcp-poc-app-dev"
